@@ -17,6 +17,17 @@ struct Server {
   int port;
 };
 
+bool is_file_exist(const char *fileName)
+{
+    FILE *file;
+    if (file = fopen(fileName, "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 uint64_t MultModulo(uint64_t a, uint64_t b, uint64_t mod) {
   uint64_t result = 0;
   a = a % mod;
@@ -69,15 +80,30 @@ int main(int argc, char **argv) {
       switch (option_index) {
       case 0:
         ConvertStringToUI64(optarg, &k);
-        // TODO: your code here
+        if (k <= 0)
+          {
+              printf("Invalid arguments (k)!\n");
+              exit(EXIT_FAILURE);
+          }
         break;
       case 1:
         ConvertStringToUI64(optarg, &mod);
-        // TODO: your code here
+        if (mod <= 0)
+          {
+              printf("Invalid arguments (mod)!\n");
+              exit(EXIT_FAILURE);
+          }
         break;
       case 2:
-        // TODO: your code here
-        memcpy(servers, optarg, strlen(optarg));
+        if (is_file_exist(optarg))
+        {
+            memcpy(servers, optarg, strlen(optarg));
+        }
+        else
+        {
+            printf("Invalid arguments (servers)!\n");
+            exit(EXIT_FAILURE);
+        } 
         break;
       default:
         printf("Index %d is out of options\n", option_index);
@@ -99,13 +125,35 @@ int main(int argc, char **argv) {
   }
 
   // TODO: for one server here, rewrite with servers from file
-  unsigned int servers_num = 1;
+  unsigned int servers_num = 0;
+  FILE* fp;
+  fp = fopen(servers, "r");
+  while (!feof(fp))
+  {
+    char test1[255];
+    char test2[255];
+    fscanf(fp, "%s : %s\n", test1, test2);
+    servers_num++;
+  }
+
   struct Server *to = malloc(sizeof(struct Server) * servers_num);
-  // TODO: delete this and parallel work between servers
-  to[0].port = 20001;
-  memcpy(to[0].ip, "127.0.0.1", sizeof("127.0.0.1"));
+  fseek(fp, 0L, SEEK_SET);
+
+  int index = 0;
+  while (!feof(fp))
+  {
+    fscanf(fp, "%s : %d\n", to[index].ip, &to[index].port);
+    printf("ip: %s, port: %d\n", to[index].ip, to[index].port);
+    index++;
+  }
+  fclose(fp);
 
   // TODO: work continiously, rewrite to make parallel
+  uint64_t result = 1;
+  int* sck = malloc(sizeof(int) * servers_num);
+  int interval = k / servers_num;
+  int previous_end = interval;
+
   for (int i = 0; i < servers_num; i++) {
     struct hostent *hostname = gethostbyname(to[i].ip);
     if (hostname == NULL) {
@@ -131,8 +179,17 @@ int main(int argc, char **argv) {
 
     // TODO: for one server
     // parallel between servers
+
     uint64_t begin = 1;
-    uint64_t end = k;
+    uint64_t end = interval;
+
+    if (i != 0) {
+      begin = previous_end + 1;
+      end = i * interval;
+      previous_end = i * interval;
+    }
+
+    
 
     char task[sizeof(uint64_t) * 3];
     memcpy(task, &begin, sizeof(uint64_t));
