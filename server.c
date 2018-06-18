@@ -184,23 +184,20 @@ int main(int argc, char **argv) {
 
       struct FactorialArgs args[tnum];
       int interval = end / tnum;
-      int previous_end = interval;
-      for (uint32_t i = 0; i < tnum; i++) {
+      args[0].begin = 1;
+      args[0].end = 1;
+      args[0].mod = mod;
+      for (uint32_t i = 1; i < tnum; i++) {
         // TODO: parallel somehow
-        args[i].begin = 1;
-        args[i].end = 1;
+        int start = i * interval;
         args[i].mod = mod;
+        args[i - 1].end = start;
+        args[i].begin = start + 1;
+      }
+      args[tnum - 1].end = end;
 
-        if (i == 0) {
-          args[i].end = interval;
-        } else {
-          args[i].begin = previous_end + 1;
-          args[i].end = i * interval;
-          previous_end = i * interval;
-        }
-
-        if (pthread_create(&threads[i], NULL, ThreadFactorial,
-                           (void *)&args[i])) {
+      for (int i = 0; i < tnum; i++) {
+        if (pthread_create(&threads[i], NULL, ThreadFactorial, (void *)&args[i])) {
           printf("Error: pthread_create failed!\n");
           return 1;
         }

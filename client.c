@@ -17,6 +17,12 @@ struct Server {
   int port;
 };
 
+struct FactorialArgs {
+  uint64_t begin;
+  uint64_t end;
+  uint64_t mod;
+};
+
 bool is_file_exist(const char *fileName)
 {
     FILE *file;
@@ -151,8 +157,20 @@ int main(int argc, char **argv) {
   // TODO: work continiously, rewrite to make parallel
   uint64_t result = 1;
   int* sck = malloc(sizeof(int) * servers_num);
+
+  struct FactorialArgs args[servers_num];
   int interval = k / servers_num;
-  int previous_end = interval;
+  args[0].begin = 1;
+  args[0].end = 1;
+  for (uint32_t i = 1; i < servers_num; i++) {
+    int start = i * interval;
+    args[i - 1].end = start;
+    args[i].begin = start + 1;
+  }
+  args[servers_num - 1].end = k;
+
+
+
 
   for (int i = 0; i < servers_num; i++) {
     struct hostent *hostname = gethostbyname(to[i].ip);
@@ -180,16 +198,10 @@ int main(int argc, char **argv) {
     // TODO: for one server
     // parallel between servers
 
-    uint64_t begin = 1;
-    uint64_t end = interval;
+    uint64_t begin = args[i].begin;
+    uint64_t end = args[i].end;
 
-    if (i != 0) {
-      begin = previous_end + 1;
-      end = i * interval;
-      previous_end = i * interval;
-    }
-
-    char flag = 'f';
+    char flag = 't';
 
     char task[sizeof(uint64_t) * 3 + sizeof(char)];
 
