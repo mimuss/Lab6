@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -136,15 +137,21 @@ int main(int argc, char **argv) {
     socklen_t client_len = sizeof(client);
     int client_fd = accept(server_fd, (struct sockaddr *)&client, &client_len);
 
+
+
     if (client_fd < 0) {
       fprintf(stderr, "Could not establish new connection\n");
       continue;
     }
 
     while (true) {
-      unsigned int buffer_size = sizeof(uint64_t) * 3;
+      unsigned int buffer_size = sizeof(uint64_t) * 3 + sizeof(char);
+      unsigned int command_buffer_size = sizeof(char) * 2;
       char from_client[buffer_size];
+
       int read = recv(client_fd, from_client, buffer_size, 0);
+
+      printf("Read size: %i\n and uint64_t size: %lu\n", read, sizeof(uint64_t));
 
       if (!read)
         break;
@@ -161,10 +168,17 @@ int main(int argc, char **argv) {
 
       uint64_t begin = 0;
       uint64_t end = 0;
-      uint64_t mod = 0;
-      memcpy(&begin, from_client, sizeof(uint64_t));
-      memcpy(&end, from_client + sizeof(uint64_t), sizeof(uint64_t));
-      memcpy(&mod, from_client + 2 * sizeof(uint64_t), sizeof(uint64_t));
+      uint64_t mod = 0;      
+      char answer;
+      memcpy(&answer, from_client,                                       sizeof(char));
+      memcpy(&begin,  from_client + sizeof(char),                        sizeof(uint64_t));
+      memcpy(&end,    from_client + sizeof(uint64_t) + sizeof(char),     sizeof(uint64_t));
+      memcpy(&mod,    from_client + 2 * sizeof(uint64_t) + sizeof(char), sizeof(uint64_t));
+
+      if (answer != 't') {
+        printf("Crash signal!!!\n");
+        return 1;
+      }
 
       fprintf(stdout, "Receive: %llu %llu %llu\n", begin, end, mod);
 

@@ -189,12 +189,14 @@ int main(int argc, char **argv) {
       previous_end = i * interval;
     }
 
-    
+    char flag = 'f';
 
-    char task[sizeof(uint64_t) * 3];
-    memcpy(task, &begin, sizeof(uint64_t));
-    memcpy(task + sizeof(uint64_t), &end, sizeof(uint64_t));
-    memcpy(task + 2 * sizeof(uint64_t), &mod, sizeof(uint64_t));
+    char task[sizeof(uint64_t) * 3 + sizeof(char)];
+
+    memcpy(task,                                       &flag,  sizeof(char));
+    memcpy(task + sizeof(char),                        &begin, sizeof(uint64_t));
+    memcpy(task + sizeof(uint64_t) + sizeof(char),     &end,   sizeof(uint64_t));
+    memcpy(task + 2 * sizeof(uint64_t) + sizeof(char), &mod,   sizeof(uint64_t));
 
     if (send(sck, task, sizeof(task), 0) < 0) {
       fprintf(stderr, "Send failed\n");
